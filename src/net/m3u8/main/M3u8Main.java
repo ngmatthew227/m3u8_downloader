@@ -31,6 +31,7 @@ public class M3u8Main {
     public static void main(String[] args) throws IOException {
         Document document = Jsoup.connect(M3U8URL).get();
         List<String> fileNameList = new ArrayList<>();
+        List<String> m3u8List = new ArrayList<>();
         Map<String, String> m3u8Map = new HashMap<>();
         Elements links = document.select(".detail-play-list").select("a");
         for (Element link : links) {
@@ -54,71 +55,67 @@ public class M3u8Main {
 
             if (m3u8Url != null) {
                 fileNameList.add(link.text());
+                m3u8List.add(m3u8Url);
                 m3u8Map.put(link.text(), m3u8Url);
             }
         }
         System.out.println(m3u8Map);
-        downloadList(fileNameList, m3u8Map, "C://find_qin", 7);
+        downloadList(fileNameList, m3u8Map, "C://find_qin", m3u8List);
 
     }
 
     public static void downloadList(List<String> fileNameList, Map<String, String> m3u8Map,
-                                    String basePath, Integer downloadKey) {
+                                    String basePath, List<String> m3u8List) {
 
-        for (int i = 0; i < 2; i++) {
-            String fileName = fileNameList.get(i);
-            String dir = basePath + "/" + fileName;
-            String m3u8Url = m3u8Map.get(fileName);
-            System.out.println(dir);
+        String fileName = fileNameList.get(0);
+        String m3u8Url = m3u8Map.get(fileName);
+        System.out.println(basePath);
 
-            M3u8DownloadFactory.M3u8Download m3u8Download = M3u8DownloadFactory.getInstance(m3u8Url);
-            //设置生成目录
-            m3u8Download.setDir(dir);
-            //设置视频名称
-            m3u8Download.setFileName(fileName);
-            //设置线程数
-            m3u8Download.setThreadCount(1000);
-            //设置重试次数
-            m3u8Download.setRetryCount(100);
-            //设置连接超时时间（单位：毫秒）
-            m3u8Download.setTimeoutMillisecond(10000L);
+        M3u8DownloadFactory.M3u8Download m3u8Download = M3u8DownloadFactory.getInstance(m3u8Url, m3u8List);
+        //设置生成目录
+        m3u8Download.setDir(basePath);
+        //设置视频名称
+        m3u8Download.setFileName(fileName);
+        //设置线程数
+        m3u8Download.setThreadCount(500);
+        //设置重试次数
+        m3u8Download.setRetryCount(100);
+        //设置连接超时时间（单位：毫秒）
+        m3u8Download.setTimeoutMillisecond(10000L);
         /*
         设置日志级别
         可选值：NONE INFO DEBUG ERROR
         */
-            m3u8Download.setLogLevel(Constant.ERROR);
-            //设置监听器间隔（单位：毫秒）
-            m3u8Download.setInterval(500L);
-            //添加额外请求头
+        m3u8Download.setLogLevel(Constant.ERROR);
+        //设置监听器间隔（单位：毫秒）
+        m3u8Download.setInterval(500L);
+        //添加额外请求头
       /*  Map<String, Object> headersMap = new HashMap<>();
         headersMap.put("Content-Type", "text/html;charset=utf-8");
         m3u8Download.addRequestHeaderMap(headersMap);*/
-            //添加监听器
-            m3u8Download.addListener(new DownloadListener() {
-                @Override
-                public void start() {
-                    System.out.println("开始下载！");
-                }
+        //添加监听器
+        m3u8Download.addListener(new DownloadListener() {
+            @Override
+            public void start() {
+                System.out.println("开始下载！");
+            }
 
-                @Override
-                public void process(String downloadUrl, int finished, int sum, float percent) {
+            @Override
+            public void process(String downloadUrl, int finished, int sum, float percent) {
 //                System.out.println("下载网址：" + downloadUrl + "\t已下载" + finished + "个\t一共" + sum + "个\t已完成" + percent + "%");
-                }
+            }
 
-                @Override
-                public void speed(String speedPerSecond) {
+            @Override
+            public void speed(String speedPerSecond) {
 //                System.out.println("下载速度：" + speedPerSecond);
-                }
+            }
 
-                @Override
-                public void end() {
-                    System.out.println("下载完毕");
-                }
-            });
-            //开始下载
-            m3u8Download.start();
-        }
-
-
+            @Override
+            public void end() {
+                System.out.println("下载完毕");
+            }
+        });
+        //开始下载
+        m3u8Download.start();
     }
 }

@@ -40,14 +40,15 @@ public class M3u8DownloadFactory {
      * @param downloadUrl 要下载的链接
      * @return 返回m3u8下载实例
      */
-    public static M3u8Download getInstance(String downloadUrl) {
-        if (m3u8Download == null) {
-            synchronized (M3u8Download.class) {
-                if (m3u8Download == null)
-                    m3u8Download = new M3u8Download(downloadUrl);
-            }
-        }
-        return m3u8Download;
+    public static M3u8Download getInstance(String downloadUrl, List<String> m3u8Urls) {
+        System.out.println(m3u8Download);
+//        if (m3u8Download == null) {
+//            synchronized (M3u8Download.class) {
+//                if (m3u8Download == null)
+//                    m3u8Download = new M3u8Download(downloadUrl);
+//            }
+//        }
+        return new M3u8Download(downloadUrl, m3u8Urls);
     }
 
     public static void destroied() {
@@ -58,8 +59,6 @@ public class M3u8DownloadFactory {
 
         //优化内存占用
         private static final BlockingQueue<byte[]> BLOCKING_QUEUE = new LinkedBlockingQueue<>();
-        //m3u8 Link
-        private final String DOWNLOADURL;
         //所有ts片段下载链接
         private final Set<String> tsSet = new LinkedHashSet<>();
         //解密后的片段
@@ -68,6 +67,9 @@ public class M3u8DownloadFactory {
         private final Map<String, Object> requestHeaderMap = new HashMap<>();
         //监听事件
         private final Set<DownloadListener> listenerSet = new HashSet<>(5);
+        private final List<String> m3u8Urls;
+        //m3u8 Link
+        private String DOWNLOADURL;
         //线程数
         private int threadCount = 1;
         //重试次数
@@ -95,10 +97,12 @@ public class M3u8DownloadFactory {
         //监听间隔
         private volatile long interval = 0L;
 
-        private M3u8Download(String DOWNLOADURL) {
+        private M3u8Download(String DOWNLOADURL, List<String> m3u8Urls) {
             this.DOWNLOADURL = DOWNLOADURL;
+            this.m3u8Urls = m3u8Urls;
             requestHeaderMap.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36");
         }
+
 
         /**
          * Start Download
@@ -160,6 +164,24 @@ public class M3u8DownloadFactory {
                 //删除多余的ts片段
                 deleteFiles();
                 Log.i("视频合并完成，欢迎使用!");
+                if (m3u8Urls.size() > 0) {
+                    m3u8Urls.remove(0);
+                    setDOWNLOADURL(m3u8Urls.get(0));
+                    setThreadCount(5);
+                    checkField();
+                    String tsUrl = getTsUrl();
+                    if (StringUtils.isEmpty(tsUrl)) {
+                        Log.i("No Need Decry");
+                    } else {
+                        Log.i("Need Decry");
+                    }
+                    startDownload();
+
+                } else {
+                    Log.e("Finished Download");
+                }
+                System.out.println(m3u8Urls);
+
             }).start();
             startListener(fixedThreadPool);
         }
@@ -661,5 +683,11 @@ public class M3u8DownloadFactory {
         public void addListener(DownloadListener downloadListener) {
             listenerSet.add(downloadListener);
         }
+
+        public void setDOWNLOADURL(String DOWNLOADURL) {
+            this.DOWNLOADURL = DOWNLOADURL;
+        }
+
+
     }
 }
